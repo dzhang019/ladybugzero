@@ -572,7 +572,8 @@ MoveList ChessBoard::GeneratePseudolegalMoves() const {
     }
   }
   return result;
-}  // namespace lczero
+}
+// TODO: fix add knights()
 
 bool ChessBoard::IsValid() const {
   const auto all = ours() | theirs();

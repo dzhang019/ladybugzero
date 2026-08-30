@@ -31,7 +31,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-
+#include <cmath>
 #include "chess/types.h"
 #include "utils/bititer.h"
 
@@ -55,7 +55,7 @@ class BitBoard {
   int count() const {
 #if defined(NO_POPCNT)
     std::uint64_t x = board_;
-    x -= (x >> 1) & 0x5555555555555555;
+    x -= (x >> 1) & 0x5555555555555555; 
     x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
     x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0F;
     return (x * 0x0101010101010101) >> 56;

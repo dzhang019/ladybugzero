@@ -77,15 +77,15 @@ class ChessBoard {
   void SetFromFen(std::string_view fen, int* rule50_ply = nullptr,
                   int* moves = nullptr);
   // Nullifies the whole structure.
-  void Clear();
+  virtual void Clear();
   // Swaps black and white pieces and mirrors them relative to the
   // middle of the board. (what was on rank 1 appears on rank 8, what was
   // on file b remains on file b).
-  void Mirror();
+  virtual void Mirror();
 
   // Generates list of possible moves for "ours" (white), but may leave king
   // under check.
-  MoveList GeneratePseudolegalMoves() const;
+  virtual MoveList GeneratePseudolegalMoves() const;
   // Applies the move. (Only for "ours" (white)). Returns true if 50 moves
   // counter should be removed.
   bool ApplyMove(Move move);
@@ -97,11 +97,11 @@ class ChessBoard {
   bool IsUnderCheck() const { return IsUnderAttack(our_king_); }
 
   // Checks whether at least one of the sides has mating material.
-  bool HasMatingMaterial() const;
+  virtual bool HasMatingMaterial() const;
   // Generates legal moves.
   MoveList GenerateLegalMoves() const;
   // Check whether pseudolegal move is legal.
-  bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const;
+  virtual bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const;
 
   // Parses a move from move_str.
   // The input string should be in the "normal" notation rather than from the
@@ -228,11 +228,11 @@ class ChessBoard {
   bool operator==(const ChessBoard& other) const = default;
   bool operator!=(const ChessBoard& other) const = default;
 
- private:
+ protected:
   // Sets the piece on the square.
-  void PutPiece(Square square, PieceType piece, bool is_theirs);
+  virtual void PutPiece(Square square, PieceType piece, bool is_theirs);
   // Check internal state is consistent after state transformations.
-  bool IsValid() const;
+  virtual bool IsValid() const;
 
   // All white pieces.
   BitBoard our_pieces_;

@@ -153,6 +153,9 @@ class Move {
   static constexpr Move WhiteEnPassant(Square from, Square to) {
     return Move((from.as_idx() << 6) | to.as_idx() | kEnPassant);
   }
+  static constexpr Move Bug(Square from, Square to) {
+    return Move((from.as_idx() << 6) | to.as_idx(), true);
+  }
 
   bool operator==(const Move& other) const = default;
   bool operator!=(const Move& other) const = default;
@@ -173,9 +176,10 @@ class Move {
   bool is_null() const { return data_ == 0; }
 
   uint16_t raw_data() const { return data_; }
-
+  bool isBugMove() const { return isBugMove_; }
  private:
   explicit constexpr Move(uint16_t data) : data_(data) {}
+  explicit constexpr Move(uint16_t data, bool isBugMove) : data_(data), isBugMove_(isBugMove) {}
 
   // Move encoding using 16 bits:
   // - bits  0-5:  "to" square (6 bits)
@@ -186,6 +190,7 @@ class Move {
   // - bit   15:   reserved (potentially for side-to-move)
   // Castling is always encoded as a "king takes rook" move.
   uint16_t data_ = 0;
+  bool isBugMove_ = false;
 
   enum Masks : uint16_t {
     // clang-format off
