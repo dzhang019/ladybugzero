@@ -46,7 +46,7 @@ void BugBoard::Clear() { *this = BugBoard(); }
 void BugBoard::Mirror() {
   ChessBoard::Mirror();
   promoted_pieces_.Mirror();
-  pockets_ = pockets_ & 0xFFFF0000 >> 16 | pockets_ & 0x0000FFFF << 16;
+  pockets_ = ((pockets_ & 0xFFFF0000) >> 16) | ((pockets_ & 0x0000FFFF) << 16);
 }
 
 MoveList BugBoard::GeneratePseudolegalMoves() const {
@@ -85,17 +85,22 @@ bool BugBoard::IsValid() const {
       (rooks() & queens()).as_int() ||
       (rooks() & kings()).as_int() ||
       (queens() & kings()).as_int() ||
-      (~all & promoted()).as_int() ||
-      (BugBoard::GetPockets() & 0x000F > 8) || 
-      ((BugBoard::GetPockets() >> 16) & 0x000F > 8) ||
-      (BugBoard::GetPockets() & 0x0030 > 2) ||
-      ((BugBoard::GetPockets() >> 16) & 0x0030 > 2) ||
-      (BugBoard::GetPockets() & 0x00C0 > 2) ||
-      ((BugBoard::GetPockets() >> 16) & 0x00C0 > 2) ||
-      (BugBoard::GetPockets() & 0x0100 > 1) ||
-      ((BugBoard::GetPockets() >> 16) & 0x0100 > 1) ||
-      (BugBoard::GetPockets() & 0x0600 > 2) ||
-      ((BugBoard::GetPockets() >> 16) & 0x0600 > 2)) {
+      (~all & promoted()).as_int()) {
+    return false;
+  }
+  uint32_t pockets = GetPockets();
+  uint16_t our_pocket = static_cast<uint16_t>(pockets);
+  uint16_t their_pocket = static_cast<uint16_t>(pockets >> 16);
+  if ((GetPocketCount(0, our_pocket) > 16) || 
+      (GetPocketCount(0, their_pocket) > 16) ||
+      (GetPocketCount(1, our_pocket) > 4) || 
+      (GetPocketCount(1, their_pocket) > 4) ||
+      (GetPocketCount(2, our_pocket) > 4) || 
+      (GetPocketCount(2, their_pocket) > 4) ||
+      (GetPocketCount(3, our_pocket) > 2) || 
+      (GetPocketCount(3, their_pocket) > 2) ||
+      (GetPocketCount(4, our_pocket) > 4) || 
+      (GetPocketCount(4, their_pocket) > 4)) {
     return false;
   }
   return true;

@@ -7,8 +7,8 @@ namespace lczero {
 
 //pbrqn
 constexpr uint16_t kPocketMasks[10] = {
-  0x000F, 0x0030, 0x00C0, 0x0100, 0x0600,
-  0, 4, 6, 7, 9 
+  0x001F, 0x00E0, 0x0700, 0x1800, 0xE000,
+  0, 5, 8, 11, 13 
 };
 
 class BugBoard : public ChessBoard {
@@ -54,7 +54,7 @@ public:
   //adds partner capture to my pocket
   void AddToPocket(uint8_t partner_captured) { pockets_ += 1 << kPocketMasks[partner_captured+5]; }
   void RemoveFromPocket(uint8_t piece_placed) { pockets_ -= 1 << kPocketMasks[piece_placed+5]; }
-  
+  static constexpr uint8_t GetPocketCount(uint8_t piece, uint16_t my_pocket) { return (my_pocket & kPocketMasks[piece]) << kPocketMasks[piece + 5]; }
   // Check whether pseudolegal move is legal.
   bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const override;
 
@@ -90,13 +90,13 @@ public:
   // All pieces that used to be pawns.
   BitBoard promoted_pieces_;
   //nqrbp
-  // - Bits 0-3 -- "our" side available pawns
-  // - Bits 4-5 -- "our" side available bishops
-  // - Bits 6-7 -- "our" side available rooks
-  // - Bit 8 -- "our" side available queen
-  // - Bit 9-10 -- "our" side available knights 
+  // - Bits 0-4 -- "our" side available pawns
+  // - Bits 5-7 -- "our" side available bishops
+  // - Bits 8-10 -- "our" side available rooks
+  // - Bit 11-12 -- "our" side available queen
+  // - Bit 13-15 -- "our" side available knights 
   // "their" side availability = "our" << 16 bits
-  uint32_t pockets_;
+  uint32_t pockets_{0};
 };
 
 } // namespace lczero
