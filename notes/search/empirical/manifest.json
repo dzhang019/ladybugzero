@@ -1,0 +1,203 @@
+{
+  "analysis_date": "2026-10-04",
+  "issues": [
+    1628,
+    1631,
+    1634,
+    1637,
+    1640,
+    1643,
+    1646,
+    1649,
+    1652,
+    1655,
+    1658,
+    1661
+  ],
+  "minimum_both_ratings": 2600,
+  "seed": 20261004,
+  "sources": [
+    {
+      "issue": 1628,
+      "url": "https://theweekinchess.com/zips/twic1628g.zip",
+      "sha256": "c2c5eab5fdc87973f069eeab7dfdb7df7daca177e9f92f207d4fa399008af7ca",
+      "bytes": 1714886,
+      "records": 6014,
+      "accepted": 147,
+      "members": [
+        {
+          "name": "twic1628.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1631,
+      "url": "https://theweekinchess.com/zips/twic1631g.zip",
+      "sha256": "639a0a6e809feed9783d7aa29682bd7073e64ccc0b76071c0801304d587f0ed8",
+      "bytes": 1827482,
+      "records": 6370,
+      "accepted": 246,
+      "members": [
+        {
+          "name": "twic1631.pgn",
+          "encoding": "cp1252"
+        }
+      ]
+    },
+    {
+      "issue": 1634,
+      "url": "https://theweekinchess.com/zips/twic1634g.zip",
+      "sha256": "ee71bf8c19d59d2dff065f149e94e398cf62264b56f43f41b5555aced69b05b5",
+      "bytes": 1867976,
+      "records": 6475,
+      "accepted": 124,
+      "members": [
+        {
+          "name": "twic1634.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1637,
+      "url": "https://theweekinchess.com/zips/twic1637g.zip",
+      "sha256": "456fac22a9141cef1d80cd3984c02b930847c7915c28d2ab4dabb80f4cbcf737",
+      "bytes": 1772136,
+      "records": 6195,
+      "accepted": 112,
+      "members": [
+        {
+          "name": "twic1637.pgn",
+          "encoding": "cp1252"
+        }
+      ]
+    },
+    {
+      "issue": 1640,
+      "url": "https://theweekinchess.com/zips/twic1640g.zip",
+      "sha256": "fde9349e408564c56c25d72775e7c46e7b61b103f8c5e97201002bc0948a2d6b",
+      "bytes": 1643309,
+      "records": 5757,
+      "accepted": 117,
+      "members": [
+        {
+          "name": "twic1640.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1643,
+      "url": "https://theweekinchess.com/zips/twic1643g.zip",
+      "sha256": "d7a0a381b4985b2fb7c9f47acb2ad987f19070f6d728be96b2636ada30ba0ac6",
+      "bytes": 1605910,
+      "records": 5544,
+      "accepted": 112,
+      "members": [
+        {
+          "name": "twic1643.pgn",
+          "encoding": "cp1252"
+        }
+      ]
+    },
+    {
+      "issue": 1646,
+      "url": "https://theweekinchess.com/zips/twic1646g.zip",
+      "sha256": "7eb6b3192b6a070107d48d62833f007ee0e58bcfa25d2a6eea3504b94d1fa8a0",
+      "bytes": 1521928,
+      "records": 5302,
+      "accepted": 159,
+      "members": [
+        {
+          "name": "twic1646.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1649,
+      "url": "https://theweekinchess.com/zips/twic1649g.zip",
+      "sha256": "44f6450fbca3c1480a427621489723c35ea1d7e2aeb985037bd325b48fa5dab1",
+      "bytes": 2017863,
+      "records": 7064,
+      "accepted": 160,
+      "members": [
+        {
+          "name": "twic1649.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1652,
+      "url": "https://theweekinchess.com/zips/twic1652g.zip",
+      "sha256": "2178346eac06ce62ac6acb9cb3daf8437635f027a7bad0236f98075c9f13aca2",
+      "bytes": 2149619,
+      "records": 7736,
+      "accepted": 425,
+      "members": [
+        {
+          "name": "twic1652.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1655,
+      "url": "https://theweekinchess.com/zips/twic1655g.zip",
+      "sha256": "b2428e98bce0bba27041c16476c5574355c91bf8a3337647288e9ca15a32e092",
+      "bytes": 2623678,
+      "records": 9475,
+      "accepted": 105,
+      "members": [
+        {
+          "name": "twic1655.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1658,
+      "url": "https://theweekinchess.com/zips/twic1658g.zip",
+      "sha256": "2c47fc30bdf760efed77e11da4ef263c7b146811ab4c4ad8bb0281108ac8a8da",
+      "bytes": 2103400,
+      "records": 7466,
+      "accepted": 219,
+      "members": [
+        {
+          "name": "twic1658.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    },
+    {
+      "issue": 1661,
+      "url": "https://theweekinchess.com/zips/twic1661g.zip",
+      "sha256": "1c77bb2515885228fa57f1bde11f33214260e83abecc538e19e5a40d73cc5425",
+      "bytes": 2220223,
+      "records": 7670,
+      "accepted": 131,
+      "members": [
+        {
+          "name": "twic1661.pgn",
+          "encoding": "utf-8-sig"
+        }
+      ]
+    }
+  ],
+  "exclusions": {
+    "below_2600": 77481,
+    "missing_or_invalid_rating": 1452,
+    "variant_or_custom_start": 72,
+    "zero_ply": 6
+  },
+  "versions": {
+    "python": "3.12.1",
+    "chess": "1.11.2",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "matplotlib": "3.8.2"
+  },
+  "validation": "Initial-position perft 20/400/8902; mate and odd-length fixtures; every played move legal; position totals and initial counts checked"
+}
