@@ -6,6 +6,11 @@
 - The game state includes both positions, pockets, side to move on each board, castling and en passant rights, and the history needed to apply repetition rules.
 - Measure value from Team 1’s perspective. Team 1 maximizes and Team 2 minimizes. Checkmating Team 2 on either board gives $+1$. Checkmating Team 1 gives $-1$.
 
+## Repetition
+
+- The third occurrence of the same position on either board automatically draws the match. Count that board’s starting position and the positions reached by moves on that board.
+- Compare piece placement, side to move, castling rights, and legal en passant availability. Ignore pockets, promotion markers, and the other board for this comparison. The search still needs the full bughouse state.
+
 ## Search and move order
 
 - Use one search tree over both boards per engine. The tree evaluates moves for both teams. In shared-tree self-play, it informs both submission decisions. In match play, the engine submits only for its own team.

@@ -1,13 +1,9 @@
 
 #include "chess/bugposition.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <cstdlib>
-#include <cstring>
+#include <limits>
 
-#include "chess/types.h"
+#include "utils/exception.h"
 
 namespace lczero {
 
@@ -30,26 +26,41 @@ BugPosition::BugPosition(const BugPosition& parent, Move m, bool isBoardB)
   isBoardB ? us_board_B_.Mirror(): us_board_A_.Mirror();
 }
 
-BugPosition::BugPosition(const BugBoard& boardA, const BugBoard& boardB int plyCountA, int plyCountB) : repetitions_(0), ply_count_A_(plyCountA), ply_count_B_(plyCountB) {
-  us_board_A_ = boardA;
-  us_board_B_ = boardB;
-}
+BugPosition::BugPosition(const BugBoard& boardA, const BugBoard& boardB,
+                         int plyCountA, int plyCountB)
+    : us_board_A_(boardA),
+      us_board_B_(boardB),
+      ply_count_A_(plyCountA),
+      ply_count_B_(plyCountB) {}
 
-//TODO:not sure if we need this for bughouse
 BugPosition BugPosition::FromFen(std::string_view fenA, std::string_view fenB) {
+  auto load_board = [](std::string_view fen, BugBoard& board) {
+    int fullmove;
+    board.SetFromFen(fen, &fullmove);
+    if (fullmove < 1 || fullmove - 1 > std::numeric_limits<int>::max() / 2) {
+      throw Exception("FEN fullmove number is out of range");
+    }
+    return 2 * (fullmove - 1) + board.flipped();
+  };
   BugPosition pos;
-  pos.us_board_A_.SetFromFen(std::string(fenA), &pos.rule50_ply_, &pos.ply_count_);
+  pos.ply_count_A_ = load_board(fenA, pos.us_board_A_);
+  pos.ply_count_B_ = load_board(fenB, pos.us_board_B_);
   return pos;
 }
 
-uint64_t Position::Hash() const {
-  return HashCat({us_board_.Hash(), static_cast<unsigned long>(repetitions_)});
+BugMove BugPosition::ParseMove(std::string_view move_str) const {
+  if (move_str.size() < 3 || move_str[1] != ':' ||
+      (move_str[0] != 'A' && move_str[0] != 'B')) {
+    throw Exception("Expected A: or B: followed by a move");
+  }
+  const bool is_board_b = move_str[0] == 'B';
+  const BugBoard& board = is_board_b ? GetBoardB() : GetBoardA();
+  return {board.ParseMove(move_str.substr(2)), is_board_b};
 }
 
-std::string Position::DebugString() const {
-  std::string fen = PositionToFen(*this);
-  std::replace(fen.begin(), fen.end(), ' ', '_');
-  return "https://lc0.org/fen/" + fen;
+std::string BugPosition::DebugString() const {
+  return "Board A\n" + us_board_A_.DebugString() + "\nBoard B\n" +
+         us_board_B_.DebugString();
 }
 
 BoardResult operator-(const BoardResult& res) {
@@ -76,82 +87,56 @@ BoardResult BugPositionHistory::ComputeBoardResult(bool isBoardB) const {
   return BoardResult::UNDECIDED;
 }
 
-GameResult BugPositionHistory::ComputeGameResult() const {
+BugGameResult BugPositionHistory::ComputeGameResult() const {
   BoardResult A = BugPositionHistory::ComputeBoardResult(false);
   BoardResult B = BugPositionHistory::ComputeBoardResult(true);
   if (A != BoardResult::UNDECIDED) {
-    if (A == BoardResult::DRAW) { return GameResult::DRAW; }
-    return A == BoardResult::WHITE_WON ? GameResult::A_WON : GameResult::B_WON;
+    if (A == BoardResult::DRAW) return BugGameResult::DRAW;
+    return A == BoardResult::WHITE_WON ? BugGameResult::A_WON
+                                       : BugGameResult::B_WON;
   }
   if (B != BoardResult::UNDECIDED) {
-    if (B == BoardResult::DRAW) { return GameResult::DRAW; }
-    return B == BoardResult::BLACK_WON ? GameResult::A_WON : GameResult::B_WON;
+    if (B == BoardResult::DRAW) return BugGameResult::DRAW;
+    return B == BoardResult::BLACK_WON ? BugGameResult::A_WON
+                                       : BugGameResult::B_WON;
   }
-  return GameResult::UNDECIDED;
+  return BugGameResult::UNDECIDED;
 }
 
-void BugPositionHistory::Reset(const ChessBoard& board, int rule50_ply,
-                            int game_ply) {
-  positions_.clear();
-  positions_.emplace_back(board, rule50_ply, game_ply);
+void BugPositionHistory::Reset(const BugBoard& boardA, const BugBoard& boardB,
+                               int boardAply, int boardBply) {
+  Reset(BugPosition(boardA, boardB, boardAply, boardBply));
 }
 
 void BugPositionHistory::Reset(const BugPosition& pos) {
-  positions_.clear();
-  positions_.push_back(pos);
+  positions_ = {pos};
 }
 
 void BugPositionHistory::Append(Move m, bool isBoardB) {
-  // TODO(mooskagh) That should be emplace_back(Last(), m), but MSVS STL
-  //                has a bug in implementation of emplace_back, when
-  //                reallocation happens. (it also reallocates Last())
-  positions_.push_back(BugPosition(Last(), m, isBoardB));
-  int cycle_length;
-  int repetitions = ComputeLastMoveRepetitions(&cycle_length);
-  positions_.back().SetRepetitions(repetitions, cycle_length);
-}
+  const BugPosition& parent = Last();
+  BugPosition next(parent, m, isBoardB);
+  const bool other_board_is_b = !isBoardB;
+  next.SetRepetitions(parent.GetRepetitions(other_board_is_b),
+                      parent.GetPliesSincePrevRepetition(other_board_is_b),
+                      other_board_is_b);
 
-int PositionHistory::ComputeLastMoveRepetitions(int* cycle_length) const {
-  *cycle_length = 0;
-  const auto& last = positions_.back();
-  // TODO(crem) implement hash/cache based solution.
-  if (last.GetRule50Ply() < 4) return 0;
+  const BugBoard& board = isBoardB ? next.GetBoardB() : next.GetBoardA();
+  const int ply = next.GetBoardPly(isBoardB);
+  int last_checked_ply = ply;
+  for (auto it = positions_.rbegin(); it != positions_.rend(); ++it) {
+    const int previous_ply = it->GetBoardPly(isBoardB);
+    if (previous_ply == last_checked_ply) continue;
+    last_checked_ply = previous_ply;
 
-  for (int idx = positions_.size() - 5; idx >= 0; idx -= 2) {
-    const auto& pos = positions_[idx];
-    if (pos.GetBoard() == last.GetBoard()) {
-      *cycle_length = positions_.size() - 1 - idx;
-      return 1 + pos.GetRepetitions();
+    const BugBoard& previous =
+        isBoardB ? it->GetBoardB() : it->GetBoardA();
+    if (board.SamePositionForRepetition(previous)) {
+      next.SetRepetitions(1 + it->GetRepetitions(isBoardB),
+                          ply - previous_ply, isBoardB);
+      break;
     }
-    if (pos.GetRule50Ply() < 2) return 0;
   }
-  return 0;
+  positions_.push_back(next);
 }
 
-bool PositionHistory::DidRepeatSinceLastZeroingMove() const {
-  for (auto iter = positions_.rbegin(), end = positions_.rend(); iter != end;
-       ++iter) {
-    if (iter->GetRepetitions() > 0) return true;
-    if (iter->GetRule50Ply() == 0) return false;
-  }
-  return false;
-}
-
-uint64_t PositionHistory::HashLast(int positions) const {
-  uint64_t hash = positions;
-  for (auto iter = positions_.rbegin(), end = positions_.rend(); iter != end;
-       ++iter) {
-    if (!positions--) break;
-    hash = HashCat(hash, iter->Hash());
-  }
-  return HashCat(hash, Last().GetRule50Ply());
-}
-
-std::string PositionToFen(const Position& pos) {
-  std::string result = BoardToFen(pos.GetBoard());
-  result += " " + std::to_string(pos.GetRule50Ply());
-  result += " " + std::to_string(
-                      (pos.GetGamePly() + (pos.IsBlackToMove() ? 1 : 2)) / 2);
-  return result;
-}
 }  // namespace lczero

@@ -10,6 +10,7 @@
 #include <absl/cleanup/cleanup.h>
 
 #include "utils/exception.h"
+#include "utils/logging.h"
 
 #if not defined(NO_PEXT)
 // Include header for pext instruction.
@@ -40,6 +41,53 @@ static const BitBoard kPawnAttacks[] = {
     0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
     0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
     0x0000000000000000ULL};
+
+void BugBoard::SetFromFen(std::string_view fen, int* moves) {
+  ChessBoard::SetFromFen(fen, nullptr, moves);
+}
+
+Move BugBoard::ParseMove(std::string_view move_str) const {
+  if (move_str.find('@') == std::string_view::npos) {
+    return ChessBoard::ParseMove(move_str);
+  }
+  if (move_str.size() != 4 || move_str[1] != '@' ||
+      move_str[2] < 'a' || move_str[2] > 'h' ||
+      move_str[3] < '1' || move_str[3] > '8') {
+    throw Exception("Expected a drop such as N@f3");
+  }
+
+  // Use the same piece order as the pocket and drop generator.
+  constexpr std::string_view kDropPieces = "pbrqn";
+  const char piece =
+      static_cast<char>(std::tolower(static_cast<unsigned char>(move_str[0])));
+  const auto piece_index = kDropPieces.find(piece);
+  if (piece_index == std::string_view::npos) {
+    throw Exception("Invalid piece in drop: " + std::string(move_str));
+  }
+
+  Square to = Square::Parse(move_str.substr(2));
+  if (flipped()) to.Flip();
+  return Move::Bug(Square::FromIdx(static_cast<uint8_t>(piece_index)), to);
+}
+
+bool BugBoard::SamePositionForRepetition(const BugBoard& other) const {
+  const auto& board = static_cast<const ChessBoard&>(*this);
+  const auto& other_board = static_cast<const ChessBoard&>(other);
+  if (en_passant() == other.en_passant()) return board == other_board;
+
+  auto normalize = [](BugBoard copy) {
+    if (!copy.en_passant().empty()) {
+      const auto moves = copy.GenerateLegalMoves();
+      const bool can_capture = std::any_of(
+          moves.begin(), moves.end(),
+          [](Move move) { return move.is_en_passant(); });
+      if (!can_capture) copy.pawns_ &= kPawnMask;
+    }
+    return copy;
+  };
+  return static_cast<const ChessBoard&>(normalize(*this)) ==
+         static_cast<const ChessBoard&>(normalize(other));
+}
 
 void BugBoard::Clear() { *this = BugBoard(); }
 
@@ -336,82 +384,4 @@ bool BugBoard::IsLegalMove(Move move,
   return ChessBoard::IsLegalMove(move, king_attack_info);
 }
 
-//TODO: add bughouse support
-Move ChessBoard::ParseMove(std::string_view move_str) const {
-  auto complain = [&move_str](std::string_view reason) {
-    throw Exception("Invalid move (" + std::string(reason) +
-                    "): " + std::string(move_str));
-  };
-  if (move_str.size() < 4 || move_str.size() > 5) complain("wrong move size");
-  File from_file = File::Parse(move_str[0]);
-  Rank from_rank = Rank::Parse(move_str[1]);
-  File to_file = File::Parse(move_str[2]);
-  Rank to_rank = Rank::Parse(move_str[3]);
-  if (!from_file.IsValid() || !from_rank.IsValid() || !to_file.IsValid() ||
-      !to_rank.IsValid()) {
-    complain("bad square");
-  }
-  if (flipped_) {
-    from_rank.Flip();
-    to_rank.Flip();
-  }
-  Square from(from_file, from_rank);
-  Square to(to_file, to_rank);
-  if (!our_pieces_.get(from)) complain("no piece to move");
-
-  // Pawns at back ranks are used to encode en-passant, that's why we need to
-  // check that a piece doesn't go from there.
-  if (pawns_.get(from) && (from_rank != kRank1 && from_rank != kRank8) &&
-      (to_rank == kRank1 || to_rank == kRank8)) {
-    // Promotion.
-    PieceType promotion =
-        move_str.size() > 4 ? PieceType::Parse(move_str[4]) : kKnight;
-    if (!promotion.CanPromoteInto()) complain("invalid promotion");
-    return Move::WhitePromotion(from, to, promotion);
-  }
-  if (from == our_king_ && our_pieces_.get(to)) {
-    // FRC-style castling.
-    return Move::WhiteCastling(from.file(), to.file());
-  }
-  if (from == our_king_ && from == kSquareE1 && to == kSquareG1) {
-    // Kingside castling.
-    return Move::WhiteCastling(from.file(), kFileH);
-  }
-  if (from == our_king_ && from == kSquareE1 && to == kSquareC1) {
-    // Qeenside castling.
-    return Move::WhiteCastling(from.file(), kFileA);
-  }
-  if (from.file() != to.file() && pawns().get(from) && !their_pieces_.get(to)) {
-    // En passant.
-    return Move::WhiteEnPassant(from, to);
-  }
-  return Move::White(from, to);
-}
-
-namespace {
-//TODO: add bughouse support
-char GetPieceAt(const lczero::ChessBoard& board, Square square) {
-  char c = '\0';
-  if (board.ours().get(square) || board.theirs().get(square)) {
-    if (board.pawns().get(square)) {
-      c = 'P';
-    } else if (board.kings().get(square)) {
-      c = 'K';
-    } else if (board.bishops().get(square)) {
-      c = 'B';
-    } else if (board.queens().get(square)) {
-      c = 'Q';
-    } else if (board.rooks().get(square)) {
-      c = 'R';
-    } else {
-      c = 'N';
-    }
-    if (board.theirs().get(square)) {
-      c = std::tolower(c);  // Capitals are for white.
-    }
-  }
-  return c;
-}
-
-}  // namespace
 }  // namespace lczero

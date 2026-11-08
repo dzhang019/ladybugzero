@@ -127,6 +127,8 @@ files += gen.process('proto/hlo.proto',
 #############################################################################
 common_files += [
   'src/chess/board.cc',
+  'src/chess/bugboard.cc',
+  'src/chess/bugposition.cc',
   'src/chess/gamestate.cc',
   'src/chess/position.cc',
   'src/chess/uciloop.cc',

@@ -3,9 +3,15 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "chess/bugboard.h"
 namespace lczero {
+
+struct BugMove {
+  Move move;
+  bool is_board_b;
+};
 
 class BugPosition {
  public:
@@ -14,10 +20,12 @@ class BugPosition {
   BugPosition(const BugPosition& parent, Move m, bool isBoardB);
   // From particular bug position.
   BugPosition(const BugBoard& boardA, const BugBoard& boardB, int plyCountA, int plyCountB);
-  // From fen, but only can be used for starting position.
+  // Loads two ordinary chess FENs with empty bughouse pockets.
   static BugPosition FromFen(std::string_view fenA, std::string_view fenB);
 
-  uint64_t Hash() const;
+  // Parses a board-prefixed move such as A:e2e4 or B:N@f3.
+  BugMove ParseMove(std::string_view move_str) const;
+
   bool IsBlackToMove(bool isBoardB) const { return isBoardB ? us_board_B_.flipped() : us_board_A_.flipped(); }
 
   // Number of board-specific half-moves since beginning of the game.
@@ -38,7 +46,7 @@ class BugPosition {
       cycle_length_B_ = cycle_length;
     } else{
       repetitions_A_ = repetitions;
-      cycle_length_B_ = cycle_length;
+      cycle_length_A_ = cycle_length;
     }
   }
 
@@ -74,7 +82,7 @@ enum class BoardResult : uint8_t { UNDECIDED, BLACK_WON, DRAW, WHITE_WON };
 BoardResult operator-(const BoardResult& res);
 
 // A_WON means White won on A or Black won on B. B_WON means White won on B or Black won on A.
-enum class GameResult : uint8_t { UNDECIDED, A_WON, B_WON, DRAW};
+enum class BugGameResult : uint8_t { UNDECIDED, A_WON, B_WON, DRAW };
 
 class BugPositionHistory {
  public:
@@ -122,22 +130,14 @@ class BugPositionHistory {
   BoardResult ComputeBoardResult(bool isBoardB) const;
 
   // Find the endgame state(Awin/Bwin/draw/nothing) on the last position.
-  GameResult ComputeGameResult() const;
+  BugGameResult ComputeGameResult() const;
 
   // Returns whether next move should be black's for a specific board.
   bool IsBlackToMove(bool isBoardB) const { return Last().IsBlackToMove(isBoardB); }
 
-  // Builds a hash from last X positions.
-  uint64_t HashLast(int positions) const;
-
-  // Checks for any repetitions since the last time 50 move rule was reset.
-  bool DidRepeatSinceLastZeroingMove() const;
-
-  std::span<const Position> GetPositions() const { return positions_; }
+  std::span<const BugPosition> GetPositions() const { return positions_; }
 
  private:
-  int ComputeLastMoveRepetitions(int* cycle_length, bool isBoardB) const;
-
   std::vector<BugPosition> positions_;
 };
 

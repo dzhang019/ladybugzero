@@ -21,12 +21,11 @@ public:
   BugBoard& operator=(const BugBoard&) = default;
 
 
-  // Sets position from FEN string.
-  // If @rule50_ply and @moves are not nullptr, they are filled with number
-  // of moves without capture and number of full moves since the beginning of
-  // the game.
-  void SetFromFen(std::string_view fen,
-                  int* moves = nullptr);
+  // Loads an ordinary chess FEN with empty pockets and no promotion markers.
+  void SetFromFen(std::string_view fen, int* moves = nullptr);
+  // Parses a coordinate move or a drop such as N@f3 on this board.
+  Move ParseMove(std::string_view move_str) const;
+  bool SamePositionForRepetition(const BugBoard& other) const;
   // Nullifies the whole structure.
   void Clear() override;
   // Swaps black and white pieces and mirrors them relative to the
@@ -47,7 +46,7 @@ public:
   // - 2 - rook was captured
   // - 3- queen was captured
   // - 4 - knight was captured 
-  // - 63 - Nothing was captured
+  // - 255 - Nothing was captured
   uint8_t BugApplyMove(Move move);
   
   bool HasMatingMaterial() const override;
@@ -58,14 +57,6 @@ public:
   // Check whether pseudolegal move is legal.
   bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const override;
 
-  // Parses a move from move_str.
-  // The input string should be in the "normal" notation rather than from the
-  // player to move, i.e. "e7e5" for the black pawn move.
-  // Output is currently "from the player to move" perspective (i.e. from=E2,
-  // to=E4 for the same black move). This is temporary, plan is to change it
-  // soon.
-  Move ParseMove(std::string_view move_str) const;
-  
   uint32_t GetPockets() const { return pockets_; }
 
   //TODO: add pocket
