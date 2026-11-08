@@ -11,9 +11,14 @@
 
 namespace lczero {
 
-BugPosition::BugPosition(const BugPosition& parent, Move m, bool isBoardB) {
-  if(isBoardB){ ply_count_B_ = parent.ply_count_B_ + 1; }
-  else { ply_count_A_ = parent.ply_count_A_ + 1; } 
+BugPosition::BugPosition(const BugPosition& parent, Move m, bool isBoardB)
+    : ply_count_A_(parent.ply_count_A_),
+      ply_count_B_(parent.ply_count_B_) {
+  if (isBoardB) {
+    ++ply_count_B_;
+  } else {
+    ++ply_count_A_;
+  }
 
   us_board_A_ = parent.us_board_A_;
   us_board_B_ = parent.us_board_B_;
