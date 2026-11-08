@@ -147,6 +147,11 @@ class BitBoard {
     return {a.board_ & b.board_};
   }
 
+  // Returns the set of squares absent from the bitboard.
+  friend BitBoard operator~(const BitBoard& board) {
+    return BitBoard(~board.board_);
+  }
+
   // Returns bitboard with one bit reset.
   friend BitBoard operator-(const BitBoard& a, const Square& b) {
     return {a.board_ & ~(1ULL << b.as_idx())};

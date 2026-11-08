@@ -133,7 +133,7 @@ bool BugBoard::IsValid() const {
       (rooks() & queens()).as_int() ||
       (rooks() & kings()).as_int() ||
       (queens() & kings()).as_int() ||
-      (~all & promoted()).as_int()) {
+      (promoted() - all).as_int()) {
     return false;
   }
   uint32_t pockets = GetPockets();
