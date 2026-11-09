@@ -21,7 +21,10 @@ BugPosition::BugPosition(const BugPosition& parent, Move m, bool isBoardB)
 
   const uint8_t capture = isBoardB ? us_board_B_.BugApplyMove(m) : us_board_A_.BugApplyMove(m);
   if (capture != 0b11111111) {
-    isBoardB ? us_board_A_.AddToPocket(capture) : us_board_B_.AddToPocket(capture);
+    const bool capturer_is_black = parent.IsBlackToMove(isBoardB);
+    const bool partner_is_to_move = capturer_is_black != parent.IsBlackToMove(!isBoardB);
+    BugBoard& receiving_board = isBoardB ? us_board_A_ : us_board_B_;
+    receiving_board.AddToPocket(capture, partner_is_to_move);
   }
   isBoardB ? us_board_B_.Mirror(): us_board_A_.Mirror();
 }

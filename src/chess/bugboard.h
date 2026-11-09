@@ -51,7 +51,7 @@ public:
   
   bool HasMatingMaterial() const override;
   //adds partner capture to my pocket
-  void AddToPocket(uint8_t partner_captured) { pockets_ += 1 << kPocketMasks[partner_captured+5]; }
+  void AddToPocket(uint8_t partner_captured, bool my_move) { my_move ? pockets_ += 1 << kPocketMasks[partner_captured+5] : pockets_ += 1 << 16 + kPocketMasks[partner_captured+5]; }
   void RemoveFromPocket(uint8_t piece_placed) { pockets_ -= 1 << kPocketMasks[piece_placed+5]; }
   static constexpr uint8_t GetPocketCount(uint8_t piece, uint16_t my_pocket) { return (my_pocket & kPocketMasks[piece]) << kPocketMasks[piece + 5]; }
   // Check whether pseudolegal move is legal.
