@@ -229,36 +229,35 @@ uint8_t BugBoard::BugApplyMove(Move move) {
   // Move in our pieces.
   our_pieces_.reset(from);
   our_pieces_.set(to);
-  if (promoted_pieces_.get(from)) {
-    promoted_pieces_.reset(from);
-    promoted_pieces_.set(to);
-  }
-
   uint8_t captured{0xFF};
 
   // Remove captured piece.
   bool is_captured = their_pieces_.get(to);
   if (is_captured) {
     captured = 0;
-    if (bishops().get(to)) { captured = 1; }
-    if (rooks().get(to)) { captured += 2; }
-    if (knights().get(to)) { captured = 4; }
+    // Captured promoted pieces return to the partner as pawns.
+    if (!promoted_pieces_.get(to)) {
+      if (bishops().get(to)) captured = 1;
+      if (rooks().get(to)) captured = 2;
+      if (queens().get(to)) captured = 3;
+      if (knights().get(to)) captured = 4;
+    }
     their_pieces_.reset(to);
     rooks_.reset(to);
     bishops_.reset(to);
     pawns_.reset(to);
-    // Promoted pieces capture as pawn in bughouse
-    if (promoted_pieces_.get(to)){ 
-      promoted_pieces_.reset(to);
-      captured = 0; 
-    }
-    // TODO: remove from promoted_piece AND fix captured if promoted
+    promoted_pieces_.reset(to);
     if (to == Square(castlings_.their_kingside_rook, kRank8)) {
       castlings_.reset_they_can_00();
     }
     if (to == Square(castlings_.their_queenside_rook, kRank8)) {
       castlings_.reset_they_can_000();
     }
+  }
+
+  if (promoted_pieces_.get(from)) {
+    promoted_pieces_.reset(from);
+    promoted_pieces_.set(to);
   }
 
   // En passant.
@@ -291,9 +290,10 @@ uint8_t BugBoard::BugApplyMove(Move move) {
         rooks_.set(to);
         bishops_.set(to);
         break;
-      default:;
-    promoted_pieces_.set(to);
+      default:
+        break;
     }
+    promoted_pieces_.set(to);
     pawns_.reset(from);
     return captured;
   }
