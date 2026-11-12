@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace lczero {
@@ -136,6 +137,8 @@ constexpr Square kSquareA1 = Square(kFileA, kRank1),
                  kSquareG1 = Square(kFileG, kRank1),
                  kSquareH1 = Square(kFileH, kRank1);
 
+inline constexpr std::string_view kBughouseDropPieces = "PBRQN";
+
 class Move {
  public:
   Move() = default;
@@ -154,14 +157,14 @@ class Move {
     return Move((from.as_idx() << 6) | to.as_idx() | kEnPassant);
   }
   static constexpr Move Bug(Square from, Square to) {
-    return Move((from.as_idx() << 6) | to.as_idx(), true);
+    return Move((from.as_idx() << 6) | to.as_idx() | kDrop);
   }
 
   bool operator==(const Move& other) const = default;
   bool operator!=(const Move& other) const = default;
 
   // Mirrors the ranks of the move.
-  void Flip() { data_ ^= kFlipMask; }
+  void Flip() { data_ ^= isBugMove() ? (kFlipMask & kToMask) : kFlipMask; }
   std::string ToString(bool is_chess960) const;
 
   Square from() const { return Square::FromIdx((data_ & kFromMask) >> 6); }
@@ -176,21 +179,19 @@ class Move {
   bool is_null() const { return data_ == 0; }
 
   uint16_t raw_data() const { return data_; }
-  bool isBugMove() const { return isBugMove_; }
+  bool isBugMove() const { return (data_ & kDrop) != 0; }
  private:
   explicit constexpr Move(uint16_t data) : data_(data) {}
-  explicit constexpr Move(uint16_t data, bool isBugMove) : data_(data), isBugMove_(isBugMove) {}
 
   // Move encoding using 16 bits:
   // - bits  0-5:  "to" square (6 bits)
-  // - bits  6-11: "from" square (6 bits)
+  // - bits  6-11: "from" square or drop piece index (6 bits)
   // - bits  12-13: if is_promotion:  promotion piece type
   //                if !is_promotion: SpecialMove
   // - bit   14:   is_promotion flag
-  // - bit   15:   reserved (potentially for side-to-move)
+  // - bit   15:   drop flag
   // Castling is always encoded as a "king takes rook" move.
   uint16_t data_ = 0;
-  bool isBugMove_ = false;
 
   enum Masks : uint16_t {
     // clang-format off
@@ -201,7 +202,7 @@ class Move {
     kEnPassant   = 0b0010000000000000,
     kPromotion   = 0b0100000000000000,
     kPieceMask   = 0b0011000000000000,
-    // If/when we have side-to-move bit, also flip it here.
+    kDrop        = 0b1000000000000000,
     kFlipMask    = 0b0000111000111000,
     // clang-format on
   };
@@ -234,6 +235,10 @@ inline PieceType PieceType::Parse(char c) {
 }
 
 inline std::string Move::ToString(bool is_chess960) const {
+  if (isBugMove()) {
+    return std::string(1, kBughouseDropPieces[from().as_idx()]) + "@" +
+           to().ToString();
+  }
   if (is_castling() && !is_chess960 && from().file() == kFileE) {
     if (to().file() == kFileA) {
       return from().ToString() + "c" +  to().rank().ToString();
