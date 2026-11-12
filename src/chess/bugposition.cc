@@ -1,6 +1,7 @@
 
 #include "chess/bugposition.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "utils/exception.h"
@@ -58,7 +59,13 @@ BugMove BugPosition::ParseMove(std::string_view move_str) const {
   }
   const bool is_board_b = move_str[0] == 'B';
   const BugBoard& board = is_board_b ? GetBoardB() : GetBoardA();
-  return {board.ParseMove(move_str.substr(2)), is_board_b};
+  const Move move = board.ParseMove(move_str.substr(2));
+  const auto legal_moves = board.GenerateLegalMoves();
+  if (std::find(legal_moves.begin(), legal_moves.end(), move) ==
+      legal_moves.end()) {
+    throw Exception("Illegal bughouse move: " + std::string(move_str));
+  }
+  return {move, is_board_b};
 }
 
 std::string BugPosition::DebugString() const {

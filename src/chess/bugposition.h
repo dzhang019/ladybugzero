@@ -23,7 +23,7 @@ class BugPosition {
   // Loads two ordinary chess FENs with empty bughouse pockets.
   static BugPosition FromFen(std::string_view fenA, std::string_view fenB);
 
-  // Parses a board-prefixed move such as A:e2e4 or B:N@f3.
+  // Parses and validates a board-prefixed move such as A:e2e4 or B:N@f3.
   BugMove ParseMove(std::string_view move_str) const;
 
   bool IsBlackToMove(bool isBoardB) const { return isBoardB ? us_board_B_.flipped() : us_board_A_.flipped(); }
