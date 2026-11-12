@@ -100,12 +100,21 @@ MoveList BugBoard::GeneratePseudolegalMoves() const {
   MoveList result;
   result.reserve(60);
   result = ChessBoard::GeneratePseudolegalMoves();
-  BitBoard open = ~(our_pieces_ | their_pieces_) - BitBoard(0xFF000000000000FF);
-  for (auto to : open){
-    for (int i=0;i<5;i++) {
-      if (GetPocketCount(i, true) > 0) {
-        result.emplace_back(Move::Bug(Square::FromIdx(i), to));
-      }
+  uint8_t drop_pieces[kBughouseDropPieces.size()];
+  int drop_piece_count = 0;
+  for (uint8_t piece = 0; piece < kBughouseDropPieces.size(); ++piece) {
+    if (GetPocketCount(piece, true) > 0) {
+      drop_pieces[drop_piece_count++] = piece;
+    }
+  }
+  if (drop_piece_count == 0) return result;
+
+  const BitBoard open = ~(our_pieces_ | their_pieces_);
+  for (auto to : open) {
+    for (int i = 0; i < drop_piece_count; ++i) {
+      const uint8_t piece = drop_pieces[i];
+      if (piece == 0 && !kPawnMask.get(to)) continue;
+      result.emplace_back(Move::Bug(Square::FromIdx(piece), to));
     }
   }
   return result;
@@ -337,28 +346,22 @@ bool BugBoard::HasMatingMaterial() const {
   return true;
 }
 bool BugBoard::IsLegalMove(Move move,
-                             const KingAttackInfo& king_attack_info) const {
-  const auto& from = move.from();
-  const auto& to = move.to();        
-
-  // - Placing from pocket -
+                           const KingAttackInfo& king_attack_info) const {
   if (move.isBugMove()) {
-    if (king_attack_info.in_check()) {
-      if (king_attack_info.in_double_check()) {
-        // Only a king move can resolve the double check.
-        return false;
-      } else {
-        // Only one attacking piece gives check.
-        // Our piece is free to move (not pinned). Check if the attacker is
-        // captured or interposed after the piece has moved to its destination
-        // square.
-        return king_attack_info.is_on_attack_line(to);
-      }
-    } 
-    return true;
+    const uint8_t piece = move.from().as_idx();
+    const Square to = move.to();
+    if (piece >= kBughouseDropPieces.size() ||
+        GetPocketCount(piece, true) == 0 ||
+        (our_pieces_ | their_pieces_).get(to) ||
+        (piece == 0 && !kPawnMask.get(to))) {
+      return false;
+    }
+    // A drop can resolve a single check only by interposing on an empty square.
+    return !king_attack_info.in_check() ||
+           (!king_attack_info.in_double_check() &&
+            king_attack_info.is_on_attack_line(to));
   }
 
-  // - Regular moves -
   return ChessBoard::IsLegalMove(move, king_attack_info);
 }
 
