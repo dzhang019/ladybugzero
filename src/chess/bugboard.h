@@ -5,12 +5,6 @@
 
 namespace lczero {
 
-//pbrqn
-constexpr uint16_t kPocketMasks[10] = {
-  0x001F, 0x00E0, 0x0700, 0x1800, 0xE000,
-  0, 5, 8, 11, 13 
-};
-
 class BugBoard : public ChessBoard {
 public:
   BugBoard() = default;
@@ -40,7 +34,6 @@ public:
   // Applies the move. (Only for "ours" (white)). Returns a uint8_t
   // containing information about the move so the other bugboard can
   // update its pocket if capture occurs.
-  //nqrbp
   // - 0 - pawn (or promoted piece) was captured
   // - 1 - bishop was captured
   // - 2 - rook was captured
@@ -50,14 +43,23 @@ public:
   uint8_t BugApplyMove(Move move);
   
   bool HasMatingMaterial() const override;
-  //adds partner capture to my pocket
-  void AddToPocket(uint8_t partner_captured, bool my_move) { my_move ? pockets_ += 1 << kPocketMasks[partner_captured+5] : pockets_ += 1 << 16 + kPocketMasks[partner_captured+5]; }
-  void RemoveFromPocket(uint8_t piece_placed) { pockets_ -= 1 << kPocketMasks[piece_placed+5]; }
-  static constexpr uint8_t GetPocketCount(uint8_t piece, uint16_t my_pocket) { return (my_pocket & kPocketMasks[piece]) << kPocketMasks[piece + 5]; }
+  void AddToPocket(uint8_t piece, bool our_pocket) {
+    assert(piece < 5 && GetPocketCount(piece, our_pocket) < kPocketLimits[piece]);
+    const int offset = kPocketOffsets[piece] + (our_pocket ? 0 : 32);
+    pockets_ += uint64_t{1} << offset;
+  }
+  void RemoveFromPocket(uint8_t piece) {
+    assert(piece < 5 && GetPocketCount(piece, true) > 0);
+    pockets_ -= uint64_t{1} << kPocketOffsets[piece];
+  }
+  uint8_t GetPocketCount(uint8_t piece, bool our_pocket) const {
+    const int offset = kPocketOffsets[piece] + (our_pocket ? 0 : 32);
+    return static_cast<uint8_t>((pockets_ >> offset) & kPocketCountMasks[piece]);
+  }
   // Check whether pseudolegal move is legal.
   bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const override;
 
-  uint32_t GetPockets() const { return pockets_; }
+  uint64_t GetPockets() const { return pockets_; }
 
   //TODO: add pocket
   uint64_t Hash() const {
@@ -80,14 +82,13 @@ public:
 
   // All pieces that used to be pawns.
   BitBoard promoted_pieces_;
-  //nqrbp
-  // - Bits 0-4 -- "our" side available pawns
-  // - Bits 5-7 -- "our" side available bishops
-  // - Bits 8-10 -- "our" side available rooks
-  // - Bit 11-12 -- "our" side available queen
-  // - Bit 13-15 -- "our" side available knights 
-  // "their" side availability = "our" << 16 bits
-  uint32_t pockets_{0};
+  // Pocket fields are ordered pawn, bishop, rook, queen, knight.
+  // Each side can hold material originating on both boards.
+  static constexpr int kPocketOffsets[] = {0, 6, 10, 14, 17};
+  static constexpr uint8_t kPocketCountMasks[] = {63, 15, 15, 7, 15};
+  static constexpr uint8_t kPocketLimits[] = {32, 8, 8, 4, 8};
+  // Our pocket is in the lower 32 bits and theirs is in the upper 32 bits.
+  uint64_t pockets_{0};
 };
 
 } // namespace lczero

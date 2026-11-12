@@ -94,23 +94,17 @@ void BugBoard::Clear() { *this = BugBoard(); }
 void BugBoard::Mirror() {
   ChessBoard::Mirror();
   promoted_pieces_.Mirror();
-  pockets_ = ((pockets_ & 0xFFFF0000) >> 16) | ((pockets_ & 0x0000FFFF) << 16);
+  pockets_ = (pockets_ >> 32) | (pockets_ << 32);
 }
 
 MoveList BugBoard::GeneratePseudolegalMoves() const {
   MoveList result;
   result.reserve(60);
   result = ChessBoard::GeneratePseudolegalMoves();
-  uint16_t our_pocket = BugBoard::GetPockets() & 0x0000FFFF;
   BitBoard open = ~(our_pieces_ | their_pieces_) - BitBoard(0xFF000000000000FF);
   for (auto to : open){
-    // - Bits 0-3 -- "our" side available pawns
-    // - Bits 4-5 -- "our" side available bishops
-    // - Bits 6-7 -- "our" side available rooks
-    // - Bit 8 -- "our" side available queen
-    // - Bit 9-10 -- "our" side available knights 
     for (int i=0;i<5;i++) {
-      if (our_pocket & kPocketMasks[i]) {
+      if (GetPocketCount(i, true) > 0) {
         result.emplace_back(Move::Bug(Square::FromIdx(i), to));
       }
     }
@@ -136,20 +130,11 @@ bool BugBoard::IsValid() const {
       (promoted() - all).as_int()) {
     return false;
   }
-  uint32_t pockets = GetPockets();
-  uint16_t our_pocket = static_cast<uint16_t>(pockets);
-  uint16_t their_pocket = static_cast<uint16_t>(pockets >> 16);
-  if ((GetPocketCount(0, our_pocket) > 16) || 
-      (GetPocketCount(0, their_pocket) > 16) ||
-      (GetPocketCount(1, our_pocket) > 4) || 
-      (GetPocketCount(1, their_pocket) > 4) ||
-      (GetPocketCount(2, our_pocket) > 4) || 
-      (GetPocketCount(2, their_pocket) > 4) ||
-      (GetPocketCount(3, our_pocket) > 2) || 
-      (GetPocketCount(3, their_pocket) > 2) ||
-      (GetPocketCount(4, our_pocket) > 4) || 
-      (GetPocketCount(4, their_pocket) > 4)) {
-    return false;
+  for (uint8_t piece = 0; piece < 5; ++piece) {
+    if (GetPocketCount(piece, true) > kPocketLimits[piece] ||
+        GetPocketCount(piece, false) > kPocketLimits[piece]) {
+      return false;
+    }
   }
   return true;
 }
@@ -157,9 +142,9 @@ bool BugBoard::IsValid() const {
 uint8_t BugBoard::BugApplyMove(Move move) {
   // Bughouse pocket to board
   if (move.isBugMove()) {
-    assert(static_cast<uint16_t>(pockets_) & kPocketMasks[move.from().as_idx()]);
     const Square to = move.to();
     const int piece = move.from().as_idx();
+    RemoveFromPocket(piece);
     our_pieces_.set(to);
     switch (piece) {
       case 0:
@@ -177,7 +162,6 @@ uint8_t BugBoard::BugApplyMove(Move move) {
         break;
     }
     pawns_ &= kPawnMask; 
-    RemoveFromPocket(piece);
     return 0xFF;
   }
   assert(our_pieces_.intersects(BitBoard::FromSquare(move.from())));
@@ -329,26 +313,21 @@ uint8_t BugBoard::BugApplyMove(Move move) {
 //pbrqn
 bool BugBoard::HasMatingMaterial() const {
   if (ChessBoard::HasMatingMaterial()) { return true; }
-  uint16_t our_pocket = static_cast<uint16_t>(pockets_);
-  uint16_t their_pocket = static_cast<uint16_t>(pockets_ >> 16);
-  if( (our_pocket & kPocketMasks[2]) > 0 || (our_pocket & kPocketMasks[0]) > 0 ||
-      (their_pocket & kPocketMasks[2]) > 0 || (their_pocket & kPocketMasks[0]) > 0) {
+  auto total_for_piece = [this](uint8_t piece) {
+    return GetPocketCount(piece, true) + GetPocketCount(piece, false);
+  };
+  if (total_for_piece(0) > 0 || total_for_piece(2) > 0 ||
+      total_for_piece(3) > 0) {
     return true;
   }
-  auto pocket_count = [this](uint16_t pocket) {
-    uint8_t count{0};
-    for (size_t i=0;i<5;i++) {
-      count += (kPocketMasks[i] & pocket) >> kPocketMasks[i];
-    }
-    return count;
-  };
-  if ((our_pieces_ | their_pieces_).count() + pocket_count(our_pocket) + pocket_count(their_pocket) < 4) {
+  const int pocket_count = total_for_piece(1) + total_for_piece(4);
+  if ((our_pieces_ | their_pieces_).count() + pocket_count < 4) {
     return false;
   }
-  if (!(knights().empty()) || (our_pocket & kPocketMasks[4]) > 0 || (their_pocket & kPocketMasks[4]) > 0) {
+  if (!knights().empty() || total_for_piece(4) > 0) {
     return true;
   }
-  if (pocket_count(our_pocket) + pocket_count(their_pocket) == 0) {
+  if (pocket_count == 0) {
     constexpr BitBoard kLightSquares(0x55AA55AA55AA55AAULL);
     constexpr BitBoard kDarkSquares(0xAA55AA55AA55AA55ULL);
 
