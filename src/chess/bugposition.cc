@@ -84,7 +84,6 @@ BoardResult BugPositionHistory::ComputeBoardResult(bool isBoardB) const {
     return BoardResult::DRAW;
   }
 
-  if (!board.HasMatingMaterial()) return BoardResult::DRAW;
   if (Last().GetRepetitions(isBoardB) >= 2) return BoardResult::DRAW;
 
   return BoardResult::UNDECIDED;
