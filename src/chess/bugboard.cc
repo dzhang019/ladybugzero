@@ -57,10 +57,9 @@ Move BugBoard::ParseMove(std::string_view move_str) const {
   }
 
   // Use the same piece order as the pocket and drop generator.
-  constexpr std::string_view kDropPieces = "pbrqn";
   const char piece =
-      static_cast<char>(std::tolower(static_cast<unsigned char>(move_str[0])));
-  const auto piece_index = kDropPieces.find(piece);
+      static_cast<char>(std::toupper(static_cast<unsigned char>(move_str[0])));
+  const auto piece_index = kBughouseDropPieces.find(piece);
   if (piece_index == std::string_view::npos) {
     throw Exception("Invalid piece in drop: " + std::string(move_str));
   }
